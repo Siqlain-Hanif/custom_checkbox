@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 class RadialReactionPainter extends CustomPainter {
-  bool get isHovered => _isHovered!;
   bool? _isHovered;
+  bool get isHovered => _isHovered!;
   set isHovered(bool? value) {
     if (value == _isHovered) {
       return;
@@ -10,13 +10,22 @@ class RadialReactionPainter extends CustomPainter {
     _isHovered = value;
   }
 
-  Offset? get downPosition => _downPosition;
   Offset? _downPosition;
+  Offset? get downPosition => _downPosition;
   set downPosition(Offset? value) {
     if (value == _downPosition) {
       return;
     }
     _downPosition = value;
+  }
+
+  double? _splashRadius;
+  double get splashRadius => _splashRadius!;
+  set splashRadius(double? value) {
+    if (value == _splashRadius) {
+      return;
+    }
+    _splashRadius = value;
   }
 
   @override
@@ -28,7 +37,8 @@ class RadialReactionPainter extends CustomPainter {
     var radialReactionPaint = Paint()
       ..color = Colors.grey.withOpacity(0.1)
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, kRadialReactionRadius + 15, radialReactionPaint);
+
+    canvas.drawCircle(center, splashRadius, radialReactionPaint);
   }
 
   @override

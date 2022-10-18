@@ -44,6 +44,8 @@ class _MyHomePageState extends State<MyHomePage> {
           children: <Widget>[
             CustomCheckbox(
               value: checkboxValue,
+              // splashRadius: 30,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               onChanged: (bool? value) {
                 checkboxValue = value;
                 setState(() {});
@@ -52,6 +54,8 @@ class _MyHomePageState extends State<MyHomePage> {
             const SizedBox(height: 50),
             Checkbox(
               value: checkboxValue,
+              // splashRadius: 30,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               onChanged: (bool? value) {
                 checkboxValue = value;
                 setState(() {});
