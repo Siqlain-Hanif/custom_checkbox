@@ -72,7 +72,10 @@ class CustomCheckbox extends StatefulWidget {
 
 class _CustomCheckboxState extends State<CustomCheckbox>
     with TickerProviderStateMixin {
-  // bool? _previousValue;
+  //animation and their controllers
+  Animation<double> get position => _position;
+  late Animation<double> _position;
+  late AnimationController _positionController;
   Set<MaterialState> get states => <MaterialState>{
         if (!isInteractive) MaterialState.disabled,
         if (_hovering) MaterialState.hovered,
@@ -84,6 +87,17 @@ class _CustomCheckboxState extends State<CustomCheckbox>
   };
   @override
   void initState() {
+    _positionController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      value: value == false ? 0.0 : 1.0,
+      vsync: this,
+    );
+    _position = CurvedAnimation(
+      parent: _positionController,
+      curve: Curves.fastOutSlowIn,
+      reverseCurve: Curves.fastOutSlowIn,
+    );
+
     super.initState();
     // _previousValue = widget.value;
   }
@@ -93,13 +107,33 @@ class _CustomCheckboxState extends State<CustomCheckbox>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.value != widget.value) {
       // _previousValue = oldWidget.value;
-      // animateToValue();
+      animateToValue();
     }
   }
 
   @override
   void dispose() {
+    _positionController.dispose();
     super.dispose();
+  }
+
+  void animateToValue() {
+    if (tristate) {
+      if (value == null) {
+        _positionController.value = 0.0;
+      }
+      if (value ?? true) {
+        _positionController.forward();
+      } else {
+        _positionController.reverse();
+      }
+    } else {
+      if (value ?? false) {
+        _positionController.forward();
+      } else {
+        _positionController.reverse();
+      }
+    }
   }
 
   ValueChanged<bool?>? get onChanged => widget.onChanged;
@@ -131,16 +165,6 @@ class _CustomCheckboxState extends State<CustomCheckbox>
     });
   }
 
-  BorderSide? _resolveSide(BorderSide? side) {
-    if (side is MaterialStateBorderSide) {
-      return MaterialStateProperty.resolveAs<BorderSide?>(side, states);
-    }
-    if (!states.contains(MaterialState.selected)) {
-      return side;
-    }
-    return null;
-  }
-
   bool get isInteractive => onChanged != null;
   bool _focused = false;
   void _handleFocusHighlightChanged(bool focused) {
@@ -170,12 +194,19 @@ class _CustomCheckboxState extends State<CustomCheckbox>
 
     switch (value) {
       case false:
+        _positionController.forward();
         onChanged!(true);
         break;
       case true:
+        if (tristate) {
+          _positionController.forward();
+        } else {
+          _positionController.reverse();
+        }
         onChanged!(tristate ? null : false);
         break;
       case null:
+        _positionController.value = 0.0;
         onChanged!(false);
         break;
     }
@@ -275,7 +306,6 @@ class _CustomCheckboxState extends State<CustomCheckbox>
     });
     BorderRadius effectiveBorderRadius =
         widget.borderRadius ?? BorderRadius.circular(1.0);
-
     return Semantics(
       checked: widget.value ?? false,
       child: FocusableActionDetector(
@@ -321,9 +351,14 @@ class _CustomCheckboxState extends State<CustomCheckbox>
                         ? effectiveActiveColor
                         : Colors.transparent,
                   ),
-                  child: getEffectiveIconWidgetStateWidget(
-                    effectiveCheckColor,
-                    size: iconSize,
+                  child: SizeTransition(
+                    sizeFactor: position,
+                    axis: Axis.horizontal,
+                    axisAlignment: 0.0,
+                    child: getEffectiveIconWidgetStateWidget(
+                      effectiveCheckColor,
+                      size: iconSize,
+                    ),
                   ),
                 ),
               ),
