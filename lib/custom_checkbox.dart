@@ -21,10 +21,11 @@ class CustomCheckbox extends StatefulWidget {
     this.visualDensity,
     this.focusNode,
     this.autofocus = false,
-    this.shape,
-    this.side,
-  })  : assert(tristate || value != null),
-        assert(autofocus != null);
+    this.borderRadius,
+    this.activeIcon,
+    this.inactiveIcon,
+    this.tristateIcon,
+  }) : assert(tristate || value != null);
 
   final bool? value;
 
@@ -32,11 +33,14 @@ class CustomCheckbox extends StatefulWidget {
 
   final MouseCursor? mouseCursor;
 
-  final Color? activeColor;
-
   final MaterialStateProperty<Color?>? fillColor;
-
+  final Color? activeColor;
   final Color? checkColor;
+
+  final IconData? activeIcon;
+  final IconData? inactiveIcon;
+  final IconData? tristateIcon;
+
   final bool tristate;
 
   final MaterialTapTargetSize? materialTapTargetSize;
@@ -54,9 +58,12 @@ class CustomCheckbox extends StatefulWidget {
 
   final bool autofocus;
 
-  final OutlinedBorder? shape;
+  final BorderRadius? borderRadius;
 
-  final BorderSide? side;
+  ///Will support in future
+  // final OutlinedBorder? shape;
+  ///Will support in future
+  // final BorderSide? side;
 
   static const double width = 18.0;
   @override
@@ -65,19 +72,27 @@ class CustomCheckbox extends StatefulWidget {
 
 class _CustomCheckboxState extends State<CustomCheckbox>
     with TickerProviderStateMixin {
-  bool? _previousValue;
-
+  // bool? _previousValue;
+  Set<MaterialState> get states => <MaterialState>{
+        if (!isInteractive) MaterialState.disabled,
+        if (_hovering) MaterialState.hovered,
+        if (_focused) MaterialState.focused,
+        if (value ?? true) MaterialState.selected,
+      };
+  late final Map<Type, Action<Intent>> _actionMap = <Type, Action<Intent>>{
+    ActivateIntent: CallbackAction<ActivateIntent>(onInvoke: _handleTap),
+  };
   @override
   void initState() {
     super.initState();
-    _previousValue = widget.value;
+    // _previousValue = widget.value;
   }
 
   @override
   void didUpdateWidget(CustomCheckbox oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.value != widget.value) {
-      _previousValue = oldWidget.value;
+      // _previousValue = oldWidget.value;
       // animateToValue();
     }
   }
@@ -127,44 +142,32 @@ class _CustomCheckboxState extends State<CustomCheckbox>
   }
 
   bool get isInteractive => onChanged != null;
-
-  Set<MaterialState> get states => <MaterialState>{
-        if (!isInteractive) MaterialState.disabled,
-        if (_hovering) MaterialState.hovered,
-        if (_focused) MaterialState.focused,
-        if (value ?? true) MaterialState.selected,
-      };
   bool _focused = false;
   void _handleFocusHighlightChanged(bool focused) {
     if (focused != _focused) {
-      setState(() {
-        _focused = focused;
-      });
-      if (focused) {
-        // _reactionFocusFadeController.forward();
-      } else {
-        // _reactionFocusFadeController.reverse();
-      }
+      _focused = focused;
+      setState(() {});
     }
   }
 
   bool _hovering = false;
   void _handleHoverEnter(PointerEnterEvent event) {
+    if (!isInteractive) return;
     _downPosition = event.localPosition;
     _hovering = true;
     setState(() {});
   }
 
   void _handleHoverExit(PointerExitEvent event) {
+    if (!isInteractive) return;
     _downPosition = event.localPosition;
     _hovering = false;
     setState(() {});
   }
 
   void _handleTap([Intent? _]) {
-    if (!isInteractive) {
-      return;
-    }
+    if (!isInteractive) return;
+
     switch (value) {
       case false:
         onChanged!(true);
@@ -208,58 +211,119 @@ class _CustomCheckboxState extends State<CustomCheckbox>
     final VisualDensity effectiveVisualDensity = widget.visualDensity ??
         checkboxTheme.visualDensity ??
         themeData.visualDensity;
+    // Colors need to be resolved in selected and non selected states separately
+    // so that they can be lerped between.
+    final Set<MaterialState> activeStates = states..add(MaterialState.selected);
+    final Color effectiveActiveColor =
+        widget.fillColor?.resolve(activeStates) ??
+            _widgetFillColor.resolve(activeStates) ??
+            checkboxTheme.fillColor?.resolve(activeStates) ??
+            _defaultFillColor.resolve(activeStates);
+
+    final Set<MaterialState> focusedStates = states..add(MaterialState.focused);
+    final Color effectiveFocusOverlayColor =
+        widget.overlayColor?.resolve(focusedStates) ??
+            widget.focusColor ??
+            checkboxTheme.overlayColor?.resolve(focusedStates) ??
+            themeData.focusColor;
+
+    final Set<MaterialState> hoveredStates = states..add(MaterialState.hovered);
+    final Color effectiveHoverOverlayColor =
+        widget.overlayColor?.resolve(hoveredStates) ??
+            widget.hoverColor ??
+            checkboxTheme.overlayColor?.resolve(hoveredStates) ??
+            themeData.hoverColor;
+
+    final Color effectiveBorderColor =
+        _widgetFillColor.resolve(states) ?? _defaultFillColor.resolve(states);
+    final Color effectiveCheckColor = widget.checkColor ??
+        checkboxTheme.checkColor?.resolve(states) ??
+        const Color(0xFFFFFFFF);
+
     Size size;
+    double iconSize;
+    double marginAdjuster;
+    double iconSizeAdjuster;
+    EdgeInsets effectiveMargin;
+
     switch (effectiveMaterialTapTargetSize) {
       case MaterialTapTargetSize.padded:
         size = const Size(kMinInteractiveDimension, kMinInteractiveDimension);
+        marginAdjuster = _kContainerPadddedMarginAdjuster;
+        iconSizeAdjuster = _kPaddedIconSizeAdjuster;
         break;
       case MaterialTapTargetSize.shrinkWrap:
         size = const Size(
             kMinInteractiveDimension - 8.0, kMinInteractiveDimension - 8.0);
+        marginAdjuster = _kContainerShrinkMarginAdjuster;
+        iconSizeAdjuster = _kShrinkIconSizeAdjuster;
         break;
     }
-    print(size);
-    print(effectiveVisualDensity.baseSizeAdjustment);
     size += effectiveVisualDensity.baseSizeAdjustment;
-    print(size);
-    print(kMinInteractiveDimension);
+    effectiveMargin = EdgeInsets.all(size.height / marginAdjuster);
+    iconSize = size.height / iconSizeAdjuster;
+
+    final MaterialStateProperty<MouseCursor> effectiveMouseCursor =
+        MaterialStateProperty.resolveWith<MouseCursor>(
+            (Set<MaterialState> states) {
+      return MaterialStateProperty.resolveAs<MouseCursor?>(
+              widget.mouseCursor, states) ??
+          checkboxTheme.mouseCursor?.resolve(states) ??
+          MaterialStateMouseCursor.clickable.resolve(states);
+    });
+    BorderRadius effectiveBorderRadius =
+        widget.borderRadius ?? BorderRadius.circular(1.0);
+
     return Semantics(
       checked: widget.value ?? false,
-      child: MouseRegion(
-        onEnter: _handleHoverEnter,
-        onExit: _handleHoverExit,
-        // onHover: _handleHoverChanged,
-        child: GestureDetector(
-          excludeFromSemantics: !isInteractive,
-          onTap: _handleTap,
-          onTapDown: _handleTapDown,
-          onTapUp: _handleTapEnd,
-          onTapCancel: _handleTapEnd,
-          child: CustomPaint(
-            size: size,
-            painter: RadialReactionPainter()
-              ..downPosition = _downPosition
-              ..splashRadius = widget.splashRadius ?? kRadialReactionRadius
-              ..isHovered = _hovering,
-            child: SizedBox(
-              height: size.height,
-              width: size.width,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                margin: EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(2),
-                  border: Border.all(
-                    width: 2.0,
+      child: FocusableActionDetector(
+        mouseCursor: effectiveMouseCursor.resolve(states),
+        autofocus: widget.autofocus,
+        focusNode: widget.focusNode,
+        enabled: isInteractive,
+        onShowFocusHighlight: _handleFocusHighlightChanged,
+        actions: _actionMap,
+        child: MouseRegion(
+          onEnter: _handleHoverEnter,
+          onExit: _handleHoverExit,
+          child: GestureDetector(
+            excludeFromSemantics: !isInteractive,
+            onTap: _handleTap,
+            onTapDown: _handleTapDown,
+            onTapUp: _handleTapEnd,
+            onTapCancel: _handleTapEnd,
+            child: CustomPaint(
+              size: size,
+              painter: RadialReactionPainter()
+                ..downPosition = _downPosition
+                ..splashRadius = widget.splashRadius ?? kRadialReactionRadius
+                ..hoverColor = effectiveHoverOverlayColor
+                ..focusColor = effectiveFocusOverlayColor
+                ..isHovered = _hovering
+                ..isFocused = _focused,
+              child: SizedBox.fromSize(
+                size: size,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 400),
+                  margin: effectiveMargin,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    borderRadius: effectiveBorderRadius,
+                    border: Border.all(
+                      width: 2.0,
+                      color: value == true || value == null
+                          ? Colors.transparent
+                          : effectiveBorderColor,
+                    ),
                     color: value == true || value == null
-                        ? Colors.transparent
-                        : Colors.black.withOpacity(0.5),
+                        ? effectiveActiveColor
+                        : Colors.transparent,
                   ),
-                  color: value == true || value == null
-                      ? Colors.blue
-                      : Colors.transparent,
+                  child: getEffectiveIconWidgetStateWidget(
+                    effectiveCheckColor,
+                    size: iconSize,
+                  ),
                 ),
-                child: getEffectiveIconWidgetStateWidget,
               ),
             ),
           ),
@@ -268,28 +332,56 @@ class _CustomCheckboxState extends State<CustomCheckbox>
     );
   }
 
-  Widget? get getEffectiveIconWidgetStateWidget {
+  Widget? getEffectiveIconWidgetStateWidget(Color iconColor,
+      {double size = 14}) {
     late final Widget? effectiveIconWidget;
+    final effectiveActiveIcon = widget.activeIcon ?? Icons.check;
+    final effectiveInactiveIcon = widget.inactiveIcon;
+    final effectiveTristateIcon = widget.tristateIcon ?? Icons.remove;
+
     if (value == true) {
-      effectiveIconWidget = const Icon(
-        Icons.check,
-        size: 10,
+      effectiveIconWidget = _getIconBase(
+        effectiveActiveIcon,
+        iconColor,
+        size,
       );
     } else if (value == false) {
-      effectiveIconWidget = null;
+      if (effectiveInactiveIcon != null) {
+        effectiveIconWidget = _getIconBase(
+          effectiveInactiveIcon,
+          iconColor,
+          size,
+        );
+      } else {
+        effectiveIconWidget = null;
+      }
     } else {
-      effectiveIconWidget = const Icon(Icons.remove);
+      //tristate
+      effectiveIconWidget = _getIconBase(
+        effectiveTristateIcon,
+        iconColor,
+        size,
+      );
     }
-
     return effectiveIconWidget;
+  }
+
+  Widget _getIconBase(IconData icon, Color color, double size) {
+    return Text(
+      String.fromCharCode(icon.codePoint),
+      style: TextStyle(
+        inherit: false,
+        color: color,
+        fontSize: size,
+        fontWeight: FontWeight.bold,
+        fontFamily: icon.fontFamily,
+        package: icon.fontPackage,
+      ),
+    );
   }
 }
 
-// Duration of the animation that moves the toggle from one state to another.
-const Duration _kToggleDuration = Duration(milliseconds: 200);
-
-// Duration of the fade animation for the reaction when focus and hover occur.
-const Duration _kReactionFadeDuration = Duration(milliseconds: 50);
-
-const double _kEdgeSize = CustomCheckbox.width;
-const double _kStrokeWidth = 2.0;
+const double _kContainerPadddedMarginAdjuster = 4.0;
+const double _kContainerShrinkMarginAdjuster = 4.5;
+const double _kPaddedIconSizeAdjuster = 2.8;
+const double _kShrinkIconSizeAdjuster = 2.75;

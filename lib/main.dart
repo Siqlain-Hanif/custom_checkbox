@@ -1,4 +1,5 @@
 import 'package:custom_checkbox/custom_checkbox.dart';
+import 'package:custom_checkbox/custom_checkbox_list_tile.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -29,7 +30,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  bool? checkboxValue = false;
+  bool? checkboxValue = true;
 
   @override
   Widget build(BuildContext context) {
@@ -37,31 +38,76 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: const Text("Example Custom Checkbox"),
       ),
-      body: Center(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            CustomCheckbox(
-              value: checkboxValue,
-              // splashRadius: 30,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              onChanged: (bool? value) {
-                checkboxValue = value;
-                setState(() {});
-              },
-            ),
-            const SizedBox(height: 50),
-            Checkbox(
-              value: checkboxValue,
-              // splashRadius: 30,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              onChanged: (bool? value) {
-                checkboxValue = value;
-                setState(() {});
-              },
-            ),
-          ],
+      body: SingleChildScrollView(
+        child: Center(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              CheckboxListTile(
+                value: checkboxValue,
+                title: Text("test"),
+                subtitle: Text("Subtitle"),
+                tristate: true,
+                controlAffinity: ListTileControlAffinity.leading,
+                visualDensity: VisualDensity.compact,
+                onChanged: (bool? value) {
+                  checkboxValue = value;
+                  setState(() {});
+                },
+              ),
+              const SizedBox(height: 10),
+              CustomCheckBoxListTile(
+                value: checkboxValue,
+                tristate: true,
+                visualDensity: VisualDensity.compact,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: Text("test"),
+                subtitle: Text("Subtitle"),
+                activeColor: Colors.green,
+                borderRadius: BorderRadius.circular(20),
+                activeIcon: Icons.access_time,
+                inactiveIcon: Icons.insert_chart,
+                tristateIcon: Icons.trip_origin,
+                onChanged: null,
+              ),
+              CustomCheckbox(
+                value: checkboxValue,
+                fillColor: MaterialStateProperty.resolveWith<Color>(
+                    (Set<MaterialState> states) {
+                  if (states.contains(MaterialState.hovered)) {
+                    return Colors.orange.withOpacity(.32);
+                  }
+                  return Colors.orange;
+                }),
+                checkColor: Colors.black,
+                tristate: true,
+                onChanged: (bool? value) {
+                  checkboxValue = value;
+                  setState(() {});
+                },
+              ),
+              const SizedBox(height: 50),
+              Checkbox(
+                value: checkboxValue,
+                autofocus: true,
+                tristate: true,
+                onChanged: (bool? value) {
+                  checkboxValue = value;
+                  setState(() {});
+                },
+                checkColor: Colors.black,
+                fillColor: MaterialStateProperty.resolveWith<Color>(
+                  (Set<MaterialState> states) {
+                    if (states.contains(MaterialState.disabled)) {
+                      return Colors.orange.withOpacity(.32);
+                    }
+                    return Colors.orange;
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
