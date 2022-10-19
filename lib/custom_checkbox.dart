@@ -235,7 +235,9 @@ class _CustomCheckboxState extends State<CustomCheckbox>
             themeData.hoverColor;
 
     final Color effectiveBorderColor =
-        _widgetFillColor.resolve(states) ?? _defaultFillColor.resolve(states);
+        widget.fillColor?.resolve(activeStates) ??
+            _widgetFillColor.resolve(states) ??
+            _defaultFillColor.resolve(states);
     final Color effectiveCheckColor = widget.checkColor ??
         checkboxTheme.checkColor?.resolve(states) ??
         const Color(0xFFFFFFFF);

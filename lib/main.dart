@@ -65,21 +65,15 @@ class _MyHomePageState extends State<MyHomePage> {
                 title: Text("test"),
                 subtitle: Text("Subtitle"),
                 activeColor: Colors.green,
-                borderRadius: BorderRadius.circular(20),
                 activeIcon: Icons.access_time,
-                inactiveIcon: Icons.insert_chart,
                 tristateIcon: Icons.trip_origin,
-                onChanged: null,
+                onChanged: (bool? value) {
+                  checkboxValue = value;
+                  setState(() {});
+                },
               ),
               CustomCheckbox(
                 value: checkboxValue,
-                fillColor: MaterialStateProperty.resolveWith<Color>(
-                    (Set<MaterialState> states) {
-                  if (states.contains(MaterialState.hovered)) {
-                    return Colors.orange.withOpacity(.32);
-                  }
-                  return Colors.orange;
-                }),
                 checkColor: Colors.black,
                 tristate: true,
                 onChanged: (bool? value) {
